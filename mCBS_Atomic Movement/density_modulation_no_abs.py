@@ -16,8 +16,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 
-s_in = 5
-lambda0 = 461e-9;
+s_in = 0.2
+lambda0 = 461e-9
 k = 2*np.pi/lambda0
 
 m = 87.9 * 1.66e-27 
@@ -32,16 +32,18 @@ G_Sr = 2 * np.pi * 30.5e6  # Linewidth in Hz
 Nat = 1000000
 
 N_x = 100
-N_steps_T = 21
+N_steps_T = 20
 T_max = 10e-6
 dt = 1/G_Sr
 T_step = T_max/(N_steps_T-1)
 delta_t_max = T_max/(N_steps_T-1)/10
+is_excited = False
 
 final_x = np.zeros((N_x,N_steps_T+1))
 
 for ii in range(Nat):
-    print(ii)
+    if ii%100 ==0: 
+        print(ii)
     x = random.random()*lambda0
     v = random.gauss(mu=0.,sigma=vT0)
     #print(x/lambda0)
@@ -51,17 +53,25 @@ for ii in range(Nat):
     for jj in range(N_steps_T):
         T_limit= (jj+1)*T_step
         while time < T_limit:
-            s_now = local_s(s_in,k,x)
-            photon_rate = 1/2 * G_Sr * s_now/(s_now+1)
-            #print (delta_t)
-            #print (v*delta_t/lambda0)
             time = time + dt
             x = x + v*dt
             sort = random.random()
-            if sort < 1/6*photon_rate*dt:
-                v = v + vr
-            elif sort < 1/3*photon_rate*dt:
-                v = v - vr
+            if not is_excited:
+                s_now = local_s(s_in,k,x)
+                photon_rate = 1/2 * G_Sr * s_now/(s_now+1)
+                if sort < photon_rate*dt:
+                    is_excited = True
+                    if sort < 1/2*photon_rate*dt:
+                        v = v + vr
+                    else:
+                        v = v - vr
+            else:
+                if sort < G_Sr*dt:
+                    is_excited = False
+                    if sort < 1/6*G_Sr*dt:
+                        v = v + vr
+                    elif sort < 1/3*G_Sr*dt:
+                        v = v - vr
         x_index = int((x/lambda0*N_x)%N_x)
         final_x[x_index,jj+1] = final_x[x_index,jj+1] + 1
 

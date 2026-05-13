@@ -38,7 +38,7 @@ for jj in [0,2,4,8,20]:
     time_index = jj
     plt.plot(x_vector/lambda0,density_dist[:,time_index],label="Δt = "+str(round(time_index*T_step*1e6,1))+' us')
 plt.plot(x_vector/lambda0,pop_ex,label = 'exc. population',linestyle ='--')
-plt.title('(a) s = '+str(s_in),fontsize = 14)
+plt.title('(a) $s_0 = $'+str(s_in),fontsize = 14)
 plt.legend(fontsize = 12)
 plt.xlabel('z/$\lambda$',fontsize = 14)
 plt.ylabel('Normalized density',fontsize = 14)
@@ -69,7 +69,7 @@ for jj in [0,2,4,8,20]:
     time_index = jj
     plt.plot(x_vector/lambda0,density_dist[:,time_index],label="Δt = "+str(round(time_index*T_step*1e6,1))+' us')
 plt.plot(x_vector/lambda0,pop_ex,label = 'exc. population',linestyle = '--')
-plt.title('(b) s = '+str(s_in),fontsize = 14)
+plt.title('(b) $s_0 = $'+str(s_in),fontsize = 14)
 plt.legend(fontsize = 12)
 plt.xlabel('z/$\lambda$',fontsize = 14)
 plt.ylabel('Normalized density',fontsize = 14)
@@ -81,13 +81,17 @@ plt.savefig('movement_s = '+str(s_in)+'.svg',format = 'svg')
 
 ##%% s = 5
 s_in = 5
-data = np.load('atomic_movement_s = 5.npy',encoding = 'ASCII')
+data = np.load('atomic_movement_s = 5b.npy')
 N_x = data.shape[0]
 Nat = int(np.sum(data,0)[0])
-N_steps_T = data.shape[1]-1
-x_vector = data[:,0]
-density_dist = data[:,1:]/Nat*N_x
-T_step = T_max/(N_steps_T-1)
+#N_steps_T = data.shape[1]-1
+#x_vector = data[:,0]
+#density_dist = data[:,1:]/Nat*N_x
+density_dist = data/Nat*N_x
+print(data.shape)
+#T_step = T_max/(N_steps_T-1)
+
+#print(x_vector)
 
 lambda0 = 461e-9
 k = 2*np.pi/lambda0
@@ -100,7 +104,7 @@ for jj in [0,2,4,8,20]:
     time_index = jj
     plt.plot(x_vector/lambda0,density_dist[:,time_index],label="Δt = "+str(round(time_index*T_step*1e6,1))+' us')
 plt.plot(x_vector/lambda0,pop_ex,label = 'exc. population',linestyle = '--')
-plt.title('(c) s = '+str(s_in),fontsize = 14)
+plt.title('(c) $s_0 = $'+str(s_in),fontsize = 14)
 plt.legend(fontsize = 12)
 plt.xlabel('z/$\lambda$',fontsize = 14)
 plt.ylabel('Normalized density',fontsize = 14)
