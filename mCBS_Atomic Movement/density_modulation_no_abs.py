@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 
-s_in = 0.2
+s_in = 0.8
 lambda0 = 461e-9
 k = 2*np.pi/lambda0
 
@@ -32,8 +32,8 @@ G_Sr = 2 * np.pi * 30.5e6  # Linewidth in Hz
 Nat = 1000000
 
 N_x = 100
-N_steps_T = 20
-T_max = 10e-6
+N_steps_T = 21
+T_max = 15e-6
 dt = 1/G_Sr
 T_step = T_max/(N_steps_T-1)
 delta_t_max = T_max/(N_steps_T-1)/10
@@ -86,15 +86,15 @@ for jj in range(int((N_steps_T-1)/time_interval)+1):
     time_index = jj*time_interval
     plt.plot(x_vector/lambda0,final_x[:,time_index],label=str(round(time_index*T_step*1e6,1))+' us')
 plt.plot(x_vector/lambda0,Nat/N_x*pop_ex,label = 'population')
-plt.title('s = 5')
+plt.title('s = 0.4')
 plt.legend()
 plt.xlabel('Position (lambda)')
 plt.ylabel('Frequency')
+plt.show()
 
 
 with open('test.npy', 'wb') as f:
-
-    np.save(f, np.array([1, 2]))
+    np.save(f, final_x)
 
 
 # plt.hist(final_x[:,0],bins = 20,histtype='step',label = 't = 0')
@@ -111,17 +111,17 @@ with open('test.npy', 'wb') as f:
 
 #%%
 
-time_interval = 2
+#time_interval = 2
 
-for jj in range(int((N_steps_T-1)/time_interval)+1):
-    time_index = jj*time_interval
-    plt.plot(x_vector/lambda0,final_x[:,time_index],label=str(round(time_index*T_step*1e6,1))+' us')
-plt.plot(x_vector/lambda0,Nat/N_x*pop_ex,label = 'population')
-plt.title('s = 5')
-plt.legend()
-plt.xlabel('Position (lambda)')
-plt.ylabel('Frequency')
+#for jj in range(int((N_steps_T-1)/time_interval)+1):
+#    time_index = jj*time_interval
+#    plt.plot(x_vector/lambda0,final_x[:,time_index],label=str(round(time_index*T_step*1e6,1))+' us')
+#plt.plot(x_vector/lambda0,Nat/N_x*pop_ex,label = 'population')
+#plt.title('s = 5')
+#plt.legend()
+#plt.xlabel('Position (lambda)')
+#plt.ylabel('Frequency')
 
-with open('test.npy', 'wb') as f:
+#with open('test.npy', 'wb') as f:
 
-    np.save(f, final_x)
+#    np.save(f, final_x)
