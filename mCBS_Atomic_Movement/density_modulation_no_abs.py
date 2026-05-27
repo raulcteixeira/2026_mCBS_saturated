@@ -16,7 +16,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 
-s_in = 0.8
 lambda0 = 461e-9
 k = 2*np.pi/lambda0
 
@@ -33,47 +32,51 @@ Nat = 1000000
 
 N_x = 100
 N_steps_T = 21
-T_max = 15e-6
+T_max = 10e-6
 dt = 1/G_Sr
 T_step = T_max/(N_steps_T-1)
 delta_t_max = T_max/(N_steps_T-1)/10
-is_excited = False
 
-final_x = np.zeros((N_x,N_steps_T+1))
-
-for ii in range(Nat):
-    if ii%100 ==0: 
-        print(ii)
-    x = random.random()*lambda0
-    v = random.gauss(mu=0.,sigma=vT0)
-    #print(x/lambda0)
-    time = 0
-    x_index = int((x/lambda0*N_x)%N_x)
-    final_x[x_index,0] = final_x[x_index,0] + 1
-    for jj in range(N_steps_T):
-        T_limit= (jj+1)*T_step
-        while time < T_limit:
-            time = time + dt
-            x = x + v*dt
-            sort = random.random()
-            if not is_excited:
-                s_now = local_s(s_in,k,x)
-                photon_rate = 1/2 * G_Sr * s_now/(s_now+1)
-                if sort < photon_rate*dt:
-                    is_excited = True
-                    if sort < 1/2*photon_rate*dt:
-                        v = v + vr
-                    else:
-                        v = v - vr
-            else:
-                if sort < G_Sr*dt:
-                    is_excited = False
-                    if sort < 1/6*G_Sr*dt:
-                        v = v + vr
-                    elif sort < 1/3*G_Sr*dt:
-                        v = v - vr
+for s_in in [4.0, 5.0, 6.0, 7.0, 8.0, 9.0]:
+    is_excited = False
+    final_x = np.zeros((N_x,N_steps_T+1))
+    for ii in range(Nat):
+        if ii%100 ==0: 
+            print(f"s_in = {s_in}: Processing atom {ii}")
+        x = random.random()*lambda0
+        v = random.gauss(mu=0.,sigma=vT0)
+        #print(x/lambda0)
+        time = 0
         x_index = int((x/lambda0*N_x)%N_x)
-        final_x[x_index,jj+1] = final_x[x_index,jj+1] + 1
+        final_x[x_index,0] = final_x[x_index,0] + 1
+        for jj in range(N_steps_T):
+            T_limit= (jj+1)*T_step
+            while time < T_limit:
+                time = time + dt
+                x = x + v*dt
+                sort = random.random()
+                if not is_excited:
+                    s_now = local_s(s_in,k,x)
+                    photon_rate = 1/2 * G_Sr * s_now/(s_now+1)
+                    if sort < photon_rate*dt:
+                        is_excited = True
+                        if sort < 1/2*photon_rate*dt:
+                            v = v + vr
+                        else:
+                            v = v - vr
+                else:
+                    if sort < G_Sr*dt:
+                        is_excited = False
+                        if sort < 1/6*G_Sr*dt:
+                            v = v + vr
+                        elif sort < 1/3*G_Sr*dt:
+                            v = v - vr
+            x_index = int((x/lambda0*N_x)%N_x)
+            final_x[x_index,jj+1] = final_x[x_index,jj+1] + 1
+            
+    with open(f'atomic_movement_s={s_in:.1f}.npy', 'wb') as f:
+        np.save(f, final_x)
+
 
 
 x_vector = np.linspace(0,lambda0*(N_x-1)/N_x,N_x)
@@ -86,15 +89,12 @@ for jj in range(int((N_steps_T-1)/time_interval)+1):
     time_index = jj*time_interval
     plt.plot(x_vector/lambda0,final_x[:,time_index],label=str(round(time_index*T_step*1e6,1))+' us')
 plt.plot(x_vector/lambda0,Nat/N_x*pop_ex,label = 'population')
-plt.title('s = 0.4')
+plt.title(f's = {s_in:.1f}')
 plt.legend()
 plt.xlabel('Position (lambda)')
 plt.ylabel('Frequency')
 plt.show()
 
-
-with open('test.npy', 'wb') as f:
-    np.save(f, final_x)
 
 
 # plt.hist(final_x[:,0],bins = 20,histtype='step',label = 't = 0')

@@ -11,10 +11,10 @@ import random
 
 
 
-T_max = 30e-6
+T_max = 15e-6
 
-s_in = 0.4
-data = np.load('mCBS_Atomic Movement\\test.npy',encoding = 'ASCII')
+s_in = 0.8
+data = np.load('test.npy',encoding = 'ASCII')
 print(data.shape)
 N_x = data.shape[0]
 Nat = int(np.sum(data,0)[0])
