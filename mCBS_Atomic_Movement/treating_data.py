@@ -19,7 +19,7 @@ T_max = 10e-6
 
 ## s = 0.2
 s_in = 0.2
-data = np.load('atomic_movement_s = 0,2.npy',encoding = 'ASCII')
+data = np.load('mCBS_Atomic_Movement/old/atomic_movement_s = 0,2.npy',encoding = 'ASCII')
 N_x = data.shape[0]
 Nat = int(np.sum(data,0)[0])
 N_steps_T = data.shape[1]-1
@@ -36,21 +36,23 @@ pop_ex = local_s(s_in,k,x_vector)/(local_s(s_in,k,x_vector)+1)/2
 plt.figure()
 for jj in [0,2,4,8,20]:
     time_index = jj
-    plt.plot(x_vector/lambda0,density_dist[:,time_index],label="Δt = "+str(round(time_index*T_step*1e6,1))+' us')
+    plt.plot(x_vector/lambda0,density_dist[:,time_index],label="$\Delta t = $"+str(round(time_index*T_step*1e6,1))+' $\mu$s')
 plt.plot(x_vector/lambda0,pop_ex,label = 'exc. population',linestyle ='--')
-plt.title('(a) $s_0 = $'+str(s_in),fontsize = 14)
-plt.legend(fontsize = 12)
-plt.xlabel('z/$\lambda$',fontsize = 14)
-plt.ylabel('Normalized density',fontsize = 14)
-plt.xticks(fontsize=12)
-plt.yticks(fontsize=12)
-plt.ylim([-0.05,2.0])
+plt.title('(a) $s_0 = $'+str(s_in),fontsize = 18)
+plt.legend(fontsize = 16, loc = 'upper right')
+plt.xlabel('$z/\lambda$',fontsize = 18)
+plt.ylabel('Normalized density',fontsize = 18)
+plt.xticks(fontsize = 16)
+plt.yticks(fontsize = 16)
+plt.locator_params(axis='y', nbins=4)
+plt.ylim([-0.05,1.8])
 plt.xlim([-0.05,1.1])
+plt.tight_layout()
 plt.savefig('movement_s = '+str(s_in)+'.svg',format = 'svg')
 
 ##%% s = 1
 s_in = 1
-data = np.load('atomic_movement_s = 1.npy',encoding = 'ASCII')
+data = np.load('mCBS_Atomic_Movement/old/atomic_movement_s = 1.npy',encoding = 'ASCII')
 N_x = data.shape[0]
 Nat = int(np.sum(data,0)[0])
 N_steps_T = data.shape[1]-1
@@ -67,21 +69,23 @@ pop_ex = local_s(s_in,k,x_vector)/(local_s(s_in,k,x_vector)+1)/2
 plt.figure()
 for jj in [0,2,4,8,20]:
     time_index = jj
-    plt.plot(x_vector/lambda0,density_dist[:,time_index],label="Δt = "+str(round(time_index*T_step*1e6,1))+' us')
+    plt.plot(x_vector/lambda0,density_dist[:,time_index],label="$\Delta t = $"+str(round(time_index*T_step*1e6,1))+' $\mu$s')
 plt.plot(x_vector/lambda0,pop_ex,label = 'exc. population',linestyle = '--')
-plt.title('(b) $s_0 = $'+str(s_in),fontsize = 14)
-plt.legend(fontsize = 12)
-plt.xlabel('z/$\lambda$',fontsize = 14)
-plt.ylabel('Normalized density',fontsize = 14)
-plt.xticks(fontsize=12)
-plt.yticks(fontsize=12)
-plt.ylim([-0.05,2.0])
+plt.title('(b) $s_0 = $'+str(s_in),fontsize = 18)
+plt.legend(fontsize = 16, loc = 'upper right')
+plt.xlabel('$z/\lambda$',fontsize = 18)
+#plt.ylabel('Normalized density',fontsize = 18)
+plt.xticks(fontsize = 16)
+plt.yticks(fontsize = 16)
+plt.locator_params(axis='y', nbins=4)
+plt.ylim([-0.05,1.8])
 plt.xlim([-0.05,1.1])
+plt.tight_layout()
 plt.savefig('movement_s = '+str(s_in)+'.svg',format = 'svg')
 
 ##%% s = 5
 s_in = 5
-data = np.load('atomic_movement_s = 5b.npy')
+data = np.load('mCBS_Atomic_Movement/old/atomic_movement_s = 5b.npy')
 N_x = data.shape[0]
 Nat = int(np.sum(data,0)[0])
 #N_steps_T = data.shape[1]-1
@@ -102,15 +106,17 @@ pop_ex = local_s(s_in,k,x_vector)/(local_s(s_in,k,x_vector)+1)/2
 plt.figure()
 for jj in [0,2,4,8,20]:
     time_index = jj
-    plt.plot(x_vector/lambda0,density_dist[:,time_index],label="Δt = "+str(round(time_index*T_step*1e6,1))+' us')
+    plt.plot(x_vector/lambda0,density_dist[:,time_index],label="$\Delta t = $"+str(round(time_index*T_step*1e6,1))+' $\mu$s')
 plt.plot(x_vector/lambda0,pop_ex,label = 'exc. population',linestyle = '--')
-plt.title('(c) $s_0 = $'+str(s_in),fontsize = 14)
-plt.legend(fontsize = 12)
-plt.xlabel('z/$\lambda$',fontsize = 14)
-plt.ylabel('Normalized density',fontsize = 14)
-plt.xticks(fontsize=12)
-plt.yticks(fontsize=12)
-plt.ylim([-0.05,2.0])
+plt.title('(c) $s_0 = $'+str(s_in),fontsize = 18)
+plt.legend(fontsize = 16, loc = 'upper right')
+plt.xlabel('$z/\lambda$',fontsize = 18)
+#plt.ylabel('Normalized density',fontsize = 18)
+plt.xticks(fontsize = 16)
+plt.yticks(fontsize = 16)
+plt.locator_params(axis='y', nbins=4)
+plt.ylim([-0.05,1.8])
 plt.xlim([-0.05,1.1])
+plt.tight_layout()
 plt.savefig('movement_s = '+str(s_in)+'.svg',format = 'svg')
 

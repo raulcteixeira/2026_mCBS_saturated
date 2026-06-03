@@ -18,7 +18,7 @@ import numpy.lib.scimath as smath
 import os
 
 # Constants
-c = 3e8
+c = 2.997e8
 kB = 1.38e-23
 m = 87.9 * 1.66e-27        # Atomic mass of 88Sr
 lambda0 = 461e-9           # Blue line
@@ -59,7 +59,7 @@ pulse_time = [30, 15, 15, 10, 10, 10, 10, 10, 10, 10, 10] # us
 #pulse_time = [10, 10]
 
 N_points_Omega = len(s_in)
-Omega_0 = np.sqrt(s_in / 2)*G_Sr  # Rabi frequency of the incoming beam, for each power
+Omega_0 = np.sqrt(s_in * G_Sr**2 / 2)  # Rabi frequency of the incoming beam, for each power
 s_0 = 4*s_in         # saturation parameter at maximum of standing wave
 Power = I_sat * s_in * np.pi * (w0 * 100)**2 / 2   #power of incident beam. mW
 
@@ -82,14 +82,14 @@ with open(os.path.join(path,f"atomic_movement_s={s_in[0]:.1f}.npy"), 'rb') as f:
     density_m = np.load(f)
 
 #density_m_avg = np.mean(density_m,axis=1)
-density_m_avg = density_m[:,0]
+density_m_avg = density_m[:,2]
 N_points_zsw = len(density_m_avg)
 
 r_max = 3 * min(w0, max([sigma_x, sigma_y]))
 z_max = 3 * min(w0, sigma_z)
 N_points_r = 51
 r = np.linspace(0, r_max, N_points_r)
-N_points_z = 101
+N_points_z = 201
 z = np.linspace(-z_max - h, z_max - h, N_points_z)
 dz = z[2]-z[1]
 zsw = np.linspace(0, lambda0/np.cos(theta_0) * (N_points_zsw - 1) / N_points_zsw, N_points_zsw)
@@ -112,24 +112,10 @@ Contrast = np.zeros(N_points_Omega)
 Intensities_no_dephasing = np.zeros((N_points_Omega,N_point_theta))
 Contrast_no_dephasing = np.zeros(N_points_Omega)
 
+final_OD = np.zeros_like(s_in)
+
 for j in range(N_points_Omega):
     
-    with open(os.path.join(path,f"atomic_movement_s={s_in[j]:.1f}.npy"), 'rb') as f:
-        density_m = np.load(f)
-
-    #density_m_avg = np.mean(density_m,axis=1)
-    density_m_avg = density_m[:,0]
-
-    plt.figure(1)
-    plt.plot(zsw, density_m_avg)
-    plt.xlabel("zsw (m)")
-    plt.ylabel("Density modulation")
-    plt.title(f"Density modulation for s={s_in[j]:.1f}")
-    #plt.show()
-
-    #Omega versus Z - to account for absorption, we need to calculate the saturation parameter 
-    # at each position in the cloud, which depends on the local intensity of the beam. 
-    # The local intensity depends on the local Rabi frequency, which depends on the local saturation parameter. We can calculate the local saturation parameter by integrating the absorption of the beam as it propagates through the cloud, taking into account the density modulation of the atoms.
     s_0_Z = np.zeros_like(Z)
     s_0_Z[0,:,:] = s_in[j]*np.exp(-R[0,:,:]**2/w0**2)
 
@@ -142,11 +128,11 @@ for j in range(N_points_Omega):
     plt.plot(z, s_0_Z[:,int((N_points_r-1)/2),int((N_points_zsw-1)/2)])
     plt.xlabel("z (m)")
     plt.ylabel("Saturation parameter s_0")
-    plt.title(f"Saturation parameter for s={s_in[j]:.1f}")
+    #plt.title(f"Saturation parameter for s={s_in[j]:.1f}")
     #plt.show()
 
     #Saturation variation for the reflected beam
-    Z_reflected = np.flip(Z, 0)
+    Z_reflected = np.flip(Z, 1)
     s_0_Z_reflected = np.zeros_like(Z)
     s_0_Z_reflected[0,:,:] = s_0_Z[-1,:,:]
 
@@ -156,94 +142,34 @@ for j in range(N_points_Omega):
         ds_0_reflected = -rho_center_reflected[i,:,:]/(1+s_0_Z_reflected[i,:,:])*s_0_Z_reflected[i,:,:]*dz
         s_0_Z_reflected[i+1,:,:] = s_0_Z_reflected[i,:,:]+ds_0_reflected
 
+    s_0_Z_reflected = np.flip(s_0_Z_reflected, 0)
+
+    plt.figure(2)
+    plt.plot(z, s_0_Z_reflected[:,int((N_points_r-1)/2),int((N_points_zsw-1)/2)])
+    plt.xlabel("z (m)")
+    plt.ylabel("Saturation parameter s_0")
+    #plt.title(f"Saturation parameter for s={s_in[j]:.1f}")
+
     #Interference of incoming and reflected beam
     Omega_Z = np.sqrt(s_0_Z/2)*G_Sr
-    Omega_Z_reflected = np.flip(np.sqrt(s_0_Z_reflected/2)*G_Sr, 1)
+    Omega_Z_reflected = np.sqrt(s_0_Z_reflected/2)*G_Sr
 
-    Omega_total = np.abs(Omega_Z*np.exp(1j*k*(Z+Zsw)*np.cos(theta_0)) + Omega_Z_reflected*np.exp(-1j*k*(Z+Zsw)*np.cos(theta_0)))
-    
-
-    Omega = Omega_total
-    Omega_M = np.sqrt(Omega**2 - G_Sr**2 / 16 + 0j)
-    s = 2 * (np.abs(Omega))**2 / G_Sr**2
-
-    P_el = 1/(1+s)
-    P_in = s/(1+s)
-    g1_el = 1
-    g1_in = (1+s)/(2*s)*(np.exp(-G_Sr*tau_c/2)
-                        + (s-1)/(s+1)*np.cos(Omega_M*tau_c)*np.exp(-3*G_Sr*tau_c/4) 
-                        + G_Sr/(4*Omega_M)*(5*s-1)/(s+1)*np.sin(Omega_M*tau_c)*np.exp(-3*G_Sr*tau_c/4))
-    g1_total = P_el*g1_el + P_in*g1_in
-    g1_no_dephasing = 1
-    
-    plt.figure(3)
-    print(np.max(np.real(g1_total)))
-
-    plt.figure(10)
-    plt.plot(Omega[int((N_points_r-1)/2),int((N_points_z-1)/2),:])
-    #plt.show()
-
-    not1, not2, density_mesh = np.meshgrid(np.ones(len(z)), np.ones(len(r)), density_m_avg, indexing='ij')
-    
-    I = np.zeros(N_point_theta)
-    I_no_dephasing = np.zeros(N_point_theta)
-
-    for i in range(N_point_theta):
-        ss_avg = np.real(np.sum(s/(1+s)*(1 + np.real(g1_total*np.exp(-2*1j*k*(Z+Zsw)*np.cos(theta[i]))))*density_mesh,axis=2))
-        I[i] = np.sum(R_sum * rho_sum * ss_avg)  # Intensity as a function of theta (fringes);   
-        ss_avg_no_dephasing = np.sum(s/(1+s)*(1 + np.real(g1_no_dephasing*np.exp(-2*1j*k*(Z+Zsw)*np.cos(theta[i]))))*density_mesh,axis=2)
-        I_no_dephasing[i] = np.sum(R_sum * rho_sum * ss_avg_no_dephasing)  # Intensity as a function of theta (fringes);
+    final_OD[j] = -np.log(s_0_Z_reflected[0,int((N_points_r-1)/2),int((N_points_zsw-1)/2)]/s_0_Z[0,int((N_points_r-1)/2),int((N_points_zsw-1)/2)])
 
 
-    plt.figure(20)
-    plt.plot(theta - theta_0, I / np.mean(I))
-    Intensities[j, :] = I
-    Contrast[j] = (np.max(I) - np.min(I)) / (np.max(I) + np.min(I)) * 2
-    Intensities_no_dephasing[j, :] = I_no_dephasing
-    Contrast_no_dephasing[j] = (np.max(I_no_dephasing) -    np.min(I_no_dephasing)) / (np.max(I_no_dephasing) + np.min(I_no_dephasing)) * 2
+final_OD = np.array(final_OD)
+print(final_OD)
+print(s_in)
 
+plt.figure(5)
+plt.plot(s_in, final_OD)
+plt.xlabel("s_in")
+plt.ylabel("Final OD")
+plt.xlim(0,10)
+plt.ylim(0,1.2)
+plt.title("Final OD as a function of s_in")
 plt.show()
 
-plt.figure(30)
-plt.plot(s_in, Contrast, 'g', label='With dephasing')
-plt.plot(s_in, Contrast_no_dephasing, 'm', label='Without dephasing')
-plt.errorbar(s_exp, Contrast_exp, xerr=s_err, yerr=Contrast_err, fmt='o', label='Experimental')
-plt.xlabel("s")
-plt.ylabel("C")
-plt.title('Contrast as a function of saturation parameter s, with and without dephasing')
-plt.legend()
-plt.show()
 
-with open("Fringes_centered_beam.txt", "w") as fid:
-    for n in range(N_points_Omega):
-        for m in range(N_point_theta):
-            fid.write(f"{Intensities[n, m]:.3f}  ")
-        fid.write("\n")
-
-with open("Contrast.txt", "w") as fid:
-    fid.write(f"s_in,  Contrast_with_dephasing,  Contrast_without_dephasing\n")
-    for n in range(N_points_Omega):
-        fid.write(f"{s_in[n]:.3f},  {Contrast[n]:.3f},  {Contrast_no_dephasing[n]:.3f}\n")
-
-#plt.figure(1)
-#plt.plot(Omega_0 * tau_c, Contrast, 'g')
-#plt.plot(Omega_0 * tau_c, Contrast_no_dephasing, 'm')
-#plt.xlabel("Ω₀ τ_c")
-#plt.ylabel("Contrast")
-#plt.legend(["Gaussian beam, centered on the atoms"])
-
-#plt.figure(2)
-#plt.plot(Power, Contrast, 'g')
-#plt.errorbar(P_exp, Contrast_exp, xerr=P_err,yerr=Contrast_err,fmt='o')
-#plt.xlabel("Incident laser power (mW)")
-#plt.ylabel("Contrast")
-#plt.title('density modulation at 2us, same power beams')
-
-plt.figure(3)
-plt.plot(s_in, Contrast, 'g', label='With dephasing')
-plt.plot(s_in, Contrast_no_dephasing, 'm', label='Without dephasing')
-plt.errorbar(s_exp, Contrast_exp, xerr=s_err, yerr=Contrast_err, fmt='o', label='Experimental')
-plt.xlabel("s")
-plt.ylabel("C")
-plt.title('density modulation at 2us, same power beams')
-plt.legend()
+data_to_save = np.column_stack((s_in, final_OD))
+np.savetxt(os.path.join(path,"final_OD.csv"), data_to_save, delimiter=",")

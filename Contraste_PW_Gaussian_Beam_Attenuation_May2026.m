@@ -37,11 +37,17 @@ w0 = 2.1e-3;               %waist of the probe beam
 z0 = pi*w0^2/lambda;
 d_l = 0;%1.08e-3/2            %distance between the center of the cloud and the center of the laser incoming beam
 
-N_points_Omega = 100;
-Omega_0 = linspace(0.3,2.5,N_points_Omega)/tau_c;     % Rabi frequency at the center of the beam, for just one beam
+%N_points_Omega = 30;
+%Omega_0 = linspace(0.3,1.7,N_points_Omega)/tau_c;     % Rabi frequency at the center of the beam, for just one beam
 % Omega_0 = linspace(1,2,N_points_Omega)/tau_c;     % Rabi frequency at the center of the beam, for just one beam
-s_0 = 8*Omega_0.^2/G_Sr^2;                          % Saturation parameter at maximum of standing wave, created by both incoming and reflected beam
-Power = I_sat*s_0./4*pi*(w0*100)^2/2;               % Total power in the incident beam, in mW
+%s_0 = 8*Omega_0.^2/G_Sr^2;                          % Saturation parameter at maximum of standing wave, created by both incoming and reflected beam
+%Power = I_sat*s_0./4*pi*(w0*100)^2/2;               % Total power in the incident beam, in mW
+
+s_in = [0.4, 0.8, 1.2, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];  % saturation parameter of incoming beam at the center of the cloud
+s_0 = 4*s_in;
+Omega_0 = sqrt(s_in/2)*G_Sr;
+Power = I_sat*s_in*pi*(w0*100)^2/2;  
+N_points_Omega = length(s_in);
 
 % %% Section 1 - Reduction of the contrast due to the amplitude variation of the probe beam (Gaussian beam)
 % % Calculation with an incident laser beam centered on the atomic cloud and
@@ -121,15 +127,30 @@ rho = exp(-(R.^2/2/sigma_x^2 + (Z+h).^2/2/sigma_z^2));      % Atomic density pro
 R_sum = sum(R,3);
 rho_sum = sum(rho,3);
 
-rho_sum_BL = sum(rho, 2);                % Sum along dimension 2 → (Nx, 1, Nz)
-rho_center = rho./rho_sum_BL/dz*b0;  %Normalized for Beer-Lambert lawZ
+rho_sum_BL = sum(rho, 1);  % Sum along dimension 2 → (Nx, 1, Nz)
+
+disp(size(rho))
+disp(size(rho_sum_BL))
+% rho_perm = permute(rho,[2 1 3]);
+% rho_sum_BL_perm = permute(rho_sum_BL,[3 2 1]);
+% disp(size(rho_perm))
+% disp(size(rho_sum_BL_perm))
+
+rho_center = zeros(size(rho));
+disp(size(rho_center))
+for ii = 1: N_points_z
+    rho_center(ii,:,:) = rho(ii,:,:)./rho_sum_BL(1,:,:)/dz*b0;  %Normalized for Beer-Lambert lawZ
+end
+
+
+disp(size(rho_center))
 
 Intensities = zeros (N_points_Omega,N_point_theta);
 
 for j = 1:N_points_Omega    
     %Omega versus Z
     s_0_Z = zeros(size(Z));
-    s_0_Z(1,:,:) = 2*(Omega_0(j)/G_Sr)^2.*exp(-R(1,:,:).^2/w0^2);
+    s_0_Z(1,:,:) = 2*(Omega_0(j)/G_Sr)^2.*exp(-2*R(1,:,:).^2/w0^2);
 
     %Saturation variation for the incoming beam
     for i=1:(length(z)-1)
@@ -138,7 +159,7 @@ for j = 1:N_points_Omega
     end
     
     %Saturation variation for the reflected beam
-    Z_reflected = flip(Z, 2);;
+    Z_reflected = flip(Z, 2);
     s_0_Z_reflected = zeros(size(Z));
     s_0_Z_reflected(1,:,:) = s_0_Z(end,:,:);
 
@@ -194,6 +215,14 @@ hold on
 plot(s_0/4,Contraste_GaussianBeam_Attenuation,'g');
 xlabel('\fontsize{16} s')
 ylabel('\fontsize{16} C')
+
+fid = fopen( 'Contrast_Mathilde.txt', 'w' );
+for n=1:N_points_Omega
+    fprintf(fid, '%.3f  ', s_0(n)/4);
+    fprintf(fid, '%.3f  ', Contraste_GaussianBeam_Attenuation(n));
+    fprintf(fid,'\r\n');
+end
+fclose(fid);
 
 % %% Section 3 - Plane waves + attenuation
 % % Calculations done using the equation of I as a function of s, Omega_0 and Omega_M
@@ -283,7 +312,7 @@ r_max = 3*min(w0, max([sigma_x,sigma_y]));  % Integration limit
 z_max = 3*min(w0, sigma_z);  % Integration limit
 N_points_r = 50;                                    % Number of points for r to perform the integral
 r = linspace(0,r_max,N_points_r);
-N_points_z = 100;                                   % Number of points for z to perform the integral
+N_points_z = 200;                                   % Number of points for z to perform the integral
 z = linspace(-z_max-h,z_max-h,N_points_z);
 dz = z(2)-z(1);
 N_points_zsw = 20;                                   % Number of points for z to perform the integral just on a period of the standing wave
@@ -294,8 +323,13 @@ rho = exp(-(R.^2/2/sigma_x^2 + (Z+h).^2/2/sigma_z^2));      % Atomic density pro
 R_sum = sum(R,3);
 rho_sum = sum(rho,3);
 
-rho_sum_BL = sum(rho, 2);                % Sum along dimension 2 → (Nx, 1, Nz)
-rho_center = rho./rho_sum_BL/dz*b0;  %Normalized for Beer-Lambert lawZ
+rho_sum_BL = sum(rho, 1);                % Sum along dimension 2 → (Nx, 1, Nz)
+
+rho_center = zeros(size(rho));
+disp(size(rho_center))
+for ii = 1: N_points_z
+    rho_center(ii,:,:) = rho(ii,:,:)./rho_sum_BL(1,:,:)/dz*b0;  %Normalized for Beer-Lambert lawZ
+end
 
 Intensities = zeros (N_points_Omega,N_point_theta);
 
@@ -347,10 +381,13 @@ Intensities = zeros (N_points_Omega,N_point_theta);
 %     Contraste_PW_Attenuation(j) = (max(I)-min(I))/(max(I)+min(I))*2;     % Calculation of the fringe contrast
 % end
 
+b_0_final = zeros(N_points_Omega);
+b_0_final_reflected = zeros(N_points_Omega);
+
 for j = 1:N_points_Omega    
     %Omega versus Z
     s_0_Z = zeros(size(Z));
-    s_0_Z(1,:,:) = 2*(Omega_0(j)/G_Sr)^2.*exp(-R(1,:,:).^2/w0^2);
+    s_0_Z(1,:,:) = 2*(Omega_0(j)/G_Sr)^2.*exp(-2*R(1,:,:).^2/w0^2);
 
     %Saturation variation for the incoming beam
     for i=1:(length(z)-1)
@@ -358,8 +395,11 @@ for j = 1:N_points_Omega
         s_0_Z(i+1,:,:) = s_0_Z(i,:,:)+ds_0;
     end
     
+    b_0_final(j) = -log(s_0_Z(end,N_points_r/2,N_points_zsw/2)/s_0_Z(1,N_points_r/2,N_points_zsw/2));
+    
+    
     %Saturation variation for the reflected beam
-    Z_reflected = flip(Z, 2);;
+    Z_reflected = flip(Z, 2);
     s_0_Z_reflected = zeros(size(Z));
     s_0_Z_reflected(1,:,:) = s_0_Z(end,:,:);
 
@@ -370,10 +410,11 @@ for j = 1:N_points_Omega
         s_0_Z_reflected(i+1,:,:) = s_0_Z_reflected(i,:,:)+ds_0_reflected;
     end
     
-%     figure(100)
-%     plot(s_0_Z(:,1,1))
-%     hold on
-%     plot(s_0_Z(:,50,1))
+    b_0_final_reflected(j) = -log(s_0_Z_reflected(end,N_points_r/2,N_points_zsw/2)/s_0_Z_reflected(1,N_points_r/2,N_points_zsw/2));
+    
+    figure(100)
+    plot(s_0_Z(:,N_points_r/2,N_points_zsw/2))
+    hold on;
     
     %Interference of incoming and reflected beam
     Omega_Z = sqrt(s_0_Z/2)*G_Sr;
@@ -412,6 +453,19 @@ for j = 1:N_points_Omega
     Contraste_GaussianBeam_Attenuation_Dirac(j) = (max(I)-min(I))/(max(I)+min(I))*2;     % Calculation of the fringe contrast
 end
 
+figure(101)
+plot(s_0/4, b_0_final); hold on;
+plot(s_0/4, b_0_final_reflected);
+
+fid = fopen( 'Attenuation_Mathilde.txt', 'w' );
+for n=1:N_points_Omega
+    fprintf(fid, '%.3f  ', s_0/4);
+    fprintf(fid, '%.3f  ', b_0_final);
+    fprintf(fid, '%.3f  ', b_0_final_reflected);
+    fprintf(fid,'\r\n');
+end
+fclose(fid);
+
 fid = fopen( 'Fringes_centered_beam.txt', 'w' );
 for n=1:N_points_Omega
     for m=1:N_point_theta
@@ -426,6 +480,14 @@ hold on
 plot(s_0/4,Contraste_GaussianBeam_Attenuation_Dirac,'m');
 xlabel('\fontsize{16} s')
 ylabel('\fontsize{16} C')
+
+fid = fopen( 'Contrast_Mathilde_Dirac.txt', 'w' );
+for n=1:N_points_Omega
+    fprintf(fid, '%.3f  ', s_0(n)/4);
+    fprintf(fid, '%.3f  ', Contraste_GaussianBeam_Attenuation_Dirac(n));
+    fprintf(fid,'\r\n');
+end
+fclose(fid);
 
 %%
 legend('Gaussian beam','Gaussian beam + attenuation', 'Plane Weve + attenuation')
