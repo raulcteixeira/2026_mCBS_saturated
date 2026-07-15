@@ -30,10 +30,19 @@ print(vT0,vr)
 G_Sr = 2 * np.pi * 30.5e6  # Linewidth in Hz
 
 path = r"C:\Users\Raul\Documents\Repositories\2026_mCBS_saturated\mCBS_Atomic_Movement\data"
-data_b0 = np.loadtxt(os.path.join(path,"final_OD.csv"), delimiter=",")
+data_b0 = np.loadtxt(os.path.join(path,"Attenuation_Raul.txt"))
 s_in = data_b0[:,0]
-b0 = data_b0[:,1]
+b0 = (data_b0[:,1] + data_b0[:,2])/2
 alpha = np.exp(-b0)
+
+plt.figure()
+plt.plot(s_in,b0,label='b0')
+plt.xlabel('saturation parameter at the center of the cloud')
+plt.ylabel('optical thickness b0')
+plt.legend()
+plt.show()
+
+
 
 Nat = 100000
 
@@ -44,7 +53,7 @@ dt = 1/G_Sr
 T_step = T_max/(N_steps_T-1)
 delta_t_max = T_max/(N_steps_T-1)/10
 
-for kk in [6]:
+for kk in range(len(s_in)):
     is_excited = False
     final_x = np.zeros((N_x,N_steps_T+1))
     for ii in range(Nat):
@@ -82,7 +91,7 @@ for kk in [6]:
             x_index = int((x/lambda0*N_x)%N_x)
             final_x[x_index,jj+1] = final_x[x_index,jj+1] + 1
             
-    with open(f'atomic_movement_b0={b0[kk]:.1f}_s={s_in[kk]:.1f}.npy', 'wb') as f:
+    with open(f'atomic_movement_abs_2_s={s_in[kk]:.1f}.npy', 'wb') as f:
         np.save(f, final_x)
 
 

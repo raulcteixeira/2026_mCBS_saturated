@@ -27,11 +27,10 @@ G_Sr = 2 * np.pi * 30.5e6  # Linewidth in Hz
 I_sat = 40.5               # mW/cm^2
 
 # Experimental parameters
-h = 0.0042                 # Distance atom cloud <-> virtual mirror (m)
+h = 4.2e-3                 # Distance atom cloud <-> virtual mirror (m)
 theta_0 = 4.3 * np.pi / 180  # Incidence angle in radians
 theta_f = np.pi / (k * h * theta_0)  # Fringe period
 sw_lambda = lambda0/np.cos(theta_0)  # Standing wave period
-h = (h//sw_lambda)*sw_lambda         # Exact number of standing wave periods
 
 N_point_theta = 300
 theta = np.linspace(theta_0 - 3 * theta_f, theta_0 + 3 * theta_f, N_point_theta)
@@ -93,11 +92,14 @@ R_sum = np.sum(R, axis=2)
 rho_sum = np.sum(rho, axis=2)
 
 # put the atoms at the same initial position of the standing wave.
-# Zsw = Zsw + np.pi/(2*k*np.cos(theta_0)) - Z % (np.pi/k/np.cos(theta_0))
+Zsw = Zsw + np.pi/(2*k*np.cos(theta_0)) - Z % (np.pi/k/np.cos(theta_0))
 
 rho_sum_BL = np.sum(rho, axis=0)
 #OD = np.exp(-R**2 / (2 * sigma_x**2))*b0;     #Normalized for Beer-Lambert law
-rho_center = rho/rho_sum_BL/dz*b0; #Density at the center of the cloud, normalized for Beer-Lambert law and for the integration over z to give b0
+rho_center = rho/rho_sum_BL[0,0]/dz*b0; #Density at the center of the cloud, normalized for Beer-Lambert law and for the integration over z to give b0
+
+print(sum(rho_center[:,0,0])*dz)
+print(sum(rho_center[:,int(N_points_r)-1,0])*dz)
 
 Intensities = np.zeros((N_points_Omega,N_point_theta))
 Contrast = np.zeros(N_points_Omega)
@@ -107,6 +109,22 @@ Contrast_no_dephasing = np.zeros(N_points_Omega)
 
 final_OD = np.zeros((N_points_Omega))
 final_OD_reflected = np.zeros((N_points_Omega))
+
+omega_file_path = os.path.join("comparison_Python_Matlab_codes","Omega_Raul.txt")
+if os.path.exists(omega_file_path):
+    os.remove(omega_file_path)
+
+ss_file_path = os.path.join("comparison_Python_Matlab_codes","ss_Raul.txt")
+if os.path.exists(ss_file_path):
+    os.remove(ss_file_path)
+
+ss_file_path1 = os.path.join("comparison_Python_Matlab_codes","ss_Raul1.txt")
+if os.path.exists(ss_file_path1):
+    os.remove(ss_file_path1)
+
+ss_file_path2 = os.path.join("comparison_Python_Matlab_codes","ss_Raul2.txt")
+if os.path.exists(ss_file_path2):
+    os.remove(ss_file_path2)
 
 for j in range(N_points_Omega):
     
@@ -144,15 +162,20 @@ for j in range(N_points_Omega):
     final_OD_reflected[j] = -np.log((s_0_Z_reflected[-1,int(N_points_r/2)-1,int(N_points_zsw/2)-1]/s_0_Z_reflected[0,int(N_points_r/2)-1,int(N_points_zsw/2)-1]))
 
     #Interference of incoming and reflected beam
-    Omega_Z = np.sqrt(s_0_Z/2)*G_Sr
-    Omega_Z_reflected = np.flip(np.sqrt(s_0_Z_reflected/2)*G_Sr, 0)
+    Omega_Z = np.sqrt(s_0_Z/2.)*G_Sr
+    Omega_Z_reflected = np.flip(np.sqrt(s_0_Z_reflected/2.)*G_Sr, 0)
 
     Omega_total = np.abs(Omega_Z*np.exp(1j*k*(Z+Zsw)*np.cos(theta_0)) + Omega_Z_reflected*np.exp(-1j*k*(Z+Zsw)*np.cos(theta_0)))
     
+    with open(omega_file_path, "a") as file_Omega:
+        Omega_line = Omega_total[int((N_points_z)/2)-1 + 20, int((N_points_r)/2)-1, :]
+        file_Omega.write(f"{s_in[j]:.3f}  ")
+        np.savetxt(file_Omega, Omega_line.reshape(1,len(Omega_line)), fmt="%.3f")
+        file_Omega.write("\n")
 
     Omega = Omega_total
-    Omega_M = np.sqrt(Omega**2 - G_Sr**2 / 16 + 0j)
-    s = 2 * (np.abs(Omega))**2 / G_Sr**2
+    Omega_M = np.sqrt(Omega**2 - G_Sr**2 / 16. + 0j)
+    s = 2. * (np.abs(Omega))**2 / G_Sr**2
 
     #P_el = 1/(1+s)
     #P_in = s/(1+s)
@@ -173,13 +196,42 @@ for j in range(N_points_Omega):
     #    I_no_dephasing[i] = np.sum(R_sum * rho_sum * ss_avg_no_dephasing)  # Intensity as a function of theta (fringes);
 
 
-    ss = s/(4.*(1+s))*(2./(1+s) + np.exp(-G_Sr*tau_c/2.) + (s-1)/(s+1)*np.cos(Omega_M*tau_c)*np.exp(-3.*G_Sr*tau_c/4.) + G_Sr/(4.*Omega_M)*(5.*s-1)/(s+1)*np.sin(Omega_M*tau_c)*np.exp(-3.*G_Sr*tau_c/4.))
+    ss = s/(4.*(1.+s))*(2./(1.+s) + np.exp(-G_Sr*tau_c/2.) + (s-1.)/(s+1.)*np.cos(Omega_M*tau_c)*np.exp(-3.*G_Sr*tau_c/4.) + G_Sr/(4.*Omega_M)*(5.*s-1.)/(s+1.)*np.sin(Omega_M*tau_c)*np.exp(-3.*G_Sr*tau_c/4.))
     for i in range(N_point_theta):
-        ss_avg = np.sum(s/(1+s) + 2*np.real(np.exp(-1j*2*k*(Z+Zsw)*np.cos(theta[i]))*ss),axis=2)
-        ss_avg_no_dephasing = np.sum(s/(1+s)*(1 + np.cos(2*k*(Z+Zsw)*np.cos(theta[i]))),axis=2)
+        ss_avg = np.sum(s/(1.+s) + 2.*np.real(np.exp(-1j*2.*k*(Z+Zsw)*np.cos(theta[i]))*ss),axis=2)
+        ss_avg_no_dephasing = np.sum(s/(1.+s)*(1. + np.cos(2.*k*(Z+Zsw)*np.cos(theta[i]))),axis=2)
         I[i] = np.sum(np.sum(R_sum*rho_sum*ss_avg))  # Intensity as a function of theta (fringes)
         I_no_dephasing[i] = np.sum(np.sum(R_sum*rho_sum*ss_avg_no_dephasing))  # Intensity as a function of theta (fringes);
-        
+        if j == 0:
+            with open(ss_file_path, "a") as file_ss:
+                file_ss.write(f"{theta[i]:.5f}  ")
+                file_ss.write(f"{ss_avg[int(N_points_z/2)-1 + 20, int(N_points_r/2)-1]:.3f}  ")
+                file_ss.write(f"{ss_avg_no_dephasing[int(N_points_z/2)-1 + 20, int(N_points_r/2)-1]:.3f}  ")
+                # to_print = s/(1.+s)*(1. + np.cos(2.*k*(Z+Zsw)*np.cos(theta[i])))
+                # ss_avg_no_dephasing_line = to_print[int(N_points_z/2)-1, int(N_points_r/2)-1, :]
+                # np.savetxt(file_ss, ss_avg_no_dephasing_line.reshape(1,len(ss_avg_no_dephasing_line)), fmt="%.3f")
+                file_ss.write("\n")
+                            
+            with open(ss_file_path1, "a") as file_ss:
+                file_ss.write(f"{theta[i]:.5f}  ")
+                #file_ss.write(f"{ss_avg[int(N_points_z/2)-1, int(N_points_r/2)-1]:.3f}  ")
+                #file_ss.write(f"{ss_avg_no_dephasing[int(N_points_z/2)-1, int(N_points_r/2)-1]:.3f}  ")
+                to_print_1 = s/(1.+s)
+                ss_avg_no_dephasing_line = to_print_1[int(N_points_z/2)-1, int(N_points_r/2)-1, :]
+                np.savetxt(file_ss, ss_avg_no_dephasing_line.reshape(1,len(ss_avg_no_dephasing_line)), fmt="%.3f")
+                file_ss.write("\n")
+
+            with open(ss_file_path2, "a") as file_ss:
+                file_ss.write(f"{theta[i]:.5f}  ")
+                #file_ss.write(f"{ss_avg[int(N_points_z/2)-1, int(N_points_r/2)-1]:.3f}  ")
+                #file_ss.write(f"{ss_avg_no_dephasing[int(N_points_z/2)-1, int(N_points_r/2)-1]:.3f}  ")
+                to_print_2 =  np.cos(2.*k*(Z+Zsw)*np.cos(theta[i]))
+                ss_avg_no_dephasing_line = to_print_2[int(N_points_z/2)-1, int(N_points_r/2)-1, :]
+                np.savetxt(file_ss, ss_avg_no_dephasing_line.reshape(1,len(ss_avg_no_dephasing_line)), fmt="%.3f")
+                file_ss.write("\n")
+
+                
+                
 
 
     plt.figure(20)
