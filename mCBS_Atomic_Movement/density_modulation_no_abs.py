@@ -28,24 +28,30 @@ vr = hbar*k/m
 print(vT0,vr)
 G_Sr = 2 * np.pi * 30.5e6  # Linewidth in Hz
 
+# number of atoms to simulate
 Nat = 1000000
 
+# Number of steps to divide the space between 0 and lambda0
 N_x = 100
+# Number of time steps to simulate
 N_steps_T = 21
+# Maximum time to simulate
 T_max = 10e-6
 dt = 1/G_Sr
 T_step = T_max/(N_steps_T-1)
 delta_t_max = T_max/(N_steps_T-1)/10
 
+# simulation for different values of s_in
 for s_in in [4.0, 5.0, 6.0, 7.0, 8.0, 9.0]:
     is_excited = False
+    # Initialize the final_x array to store the number of atoms at each position and time step
     final_x = np.zeros((N_x,N_steps_T+1))
     for ii in range(Nat):
         if ii%100 ==0: 
             print(f"s_in = {s_in}: Processing atom {ii}")
+        # Initialize the position and velocity of the atom
         x = random.random()*lambda0
         v = random.gauss(mu=0.,sigma=vT0)
-        #print(x/lambda0)
         time = 0
         x_index = int((x/lambda0*N_x)%N_x)
         final_x[x_index,0] = final_x[x_index,0] + 1
@@ -54,7 +60,9 @@ for s_in in [4.0, 5.0, 6.0, 7.0, 8.0, 9.0]:
             while time < T_limit:
                 time = time + dt
                 x = x + v*dt
+                # Random number to determine if the atom absorbs or emits a photon
                 sort = random.random()
+                # If the atom is not excited, calculate the local saturation parameter and the photon absorption rate
                 if not is_excited:
                     s_now = local_s(s_in,k,x)
                     photon_rate = 1/2 * G_Sr * s_now/(s_now+1)
@@ -64,9 +72,11 @@ for s_in in [4.0, 5.0, 6.0, 7.0, 8.0, 9.0]:
                             v = v + vr
                         else:
                             v = v - vr
+                # If the atom is excited, calculate the spontaneous emission rate and determine if the atom emits a photon
                 else:
                     if sort < G_Sr*dt:
                         is_excited = False
+                        # We consider that the atom can emit a photon in any direction, so we have a 1/6 chance of emitting in the +x direction and a 1/6 chance of emitting in the -x direction
                         if sort < 1/6*G_Sr*dt:
                             v = v + vr
                         elif sort < 1/3*G_Sr*dt:

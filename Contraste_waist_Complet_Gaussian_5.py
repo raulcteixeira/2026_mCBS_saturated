@@ -145,11 +145,17 @@ for j in range(N_points_Omega_movement):
     with open(os.path.join(path,f"atomic_movement_abs_2_s={s_in_movement[j]:.1f}.npy"), 'rb') as f:
         density_m_abs_2 = np.load(f)
 
-    #density_m_avg = np.mean(density_m,axis=1)
-    #density_m_avg = density_m[:,2]
-    #density_m_avg = density_m[:,2] + density_m_abs[:,2] + density_m_abs_2[:,2]
+    density_m = density_m / np.mean(density_m, axis=0)  # Normalize each column
+    density_m_abs = density_m_abs / np.mean(density_m_abs, axis=0)  # Normalize each column
+    density_m_abs_2 = density_m_abs_2 / np.mean(density_m_abs_2, axis=0)  # Normalize each column
+
+    # For including all times, we verage over the first 20 time steps, which correspond to 10 us.
     density_m_t = density_m[:,0:20] + density_m_abs[:,0:20] + density_m_abs_2[:,0:20]
     density_m_avg = np.mean(density_m_t,axis=1)
+
+    # If we consider the highest impact of movement, we take fixed t = 1 us.
+    # density_m_avg = density_m[:,2] + density_m_abs[:,2] + density_m_abs_2[:,2]
+    
 
     plt.figure(1)
     plt.plot(zsw, density_m_avg)
@@ -216,6 +222,13 @@ for j in range(N_points_Omega_movement):
 
     Contrast_abs_density[j] = (np.max(I_abs_density) - np.min(I_abs_density)) / (np.max(I_abs_density) + np.min(I_abs_density)) * 2
     Contrast_elastic[j] = (np.max(I_elastic) - np.min(I_elastic)) / (np.max(I_elastic) + np.min(I_elastic)) * 2
+
+
+with open("Contrast_movement.txt", "w") as fid:
+    fid.write(f"s_in_movement, Contrast_gaussian_beam_abs_density_mod,  Contrast_gaussian_beam_abs_density_mod_g1_1\n")
+    for n in range(N_points_Omega_movement):
+        fid.write(f"{s_in_movement[n]:.3f},  {Contrast_abs_density[n]:.3f},  {Contrast_elastic[n]:.3f}\n")
+
 
 
 ## Calculation of the theoretical curve for other cases
@@ -315,12 +328,6 @@ with open("Contrast.txt", "w") as fid:
     fid.write(f"s_in,  Contrast_plane_wave,  Contrast_gaussian_beam,  Contrast_gaussian_beam_abs \n")
     for n in range(N_points_Omega):
         fid.write(f"{s_in[n]:.3f},  {Contrast_0[n]:.3f},  {Contrast[n]:.3f},  {Contrast_abs[n]:.3f}\n")
-
-with open("Contrast_movement.txt", "w") as fid:
-    fid.write(f"s_in_movement, Contrast_gaussian_beam_abs_density_mod,  Contrast_gaussian_beam_abs_density_mod_g1_1\n")
-    for n in range(N_points_Omega_movement):
-        fid.write(f"{s_in_movement[n]:.3f},  {Contrast_abs_density[n]:.3f},  {Contrast_elastic[n]:.3f}\n")
-
 
 plt.figure(30)
 plt.plot(s_in, Contrast_0, label='Plane wave')
